@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BuildGuard | Payment review</title>
+  <style>
+    :root { color-scheme: light; --ink:#172b2a; --muted:#627671; --line:#dce5e0; --green:#12634c; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#f3f6f2; color:var(--ink); font:15px/1.55 system-ui,sans-serif; }
+    header { background:#122f2b; color:white; }
+    .bar, main { max-width:1200px; margin:auto; padding:22px 32px; }
+    .bar { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+    .brand { font-size:23px; font-weight:750; letter-spacing:-.8px; }
+    .brand span { color:#99d9b8; }
+    .tag { font-size:12px; padding:6px 12px; border:1px solid #49665d; border-radius:30px; }
+    main { padding-top:34px; padding-bottom:50px; }
+    .eyebrow { margin:0 0 5px; color:var(--green); font-size:11px; font-weight:750; letter-spacing:1.8px; text-transform:uppercase; }
+    h1 { font-size:36px; line-height:1.15; letter-spacing:-1.3px; margin:0 0 10px; }
+    h2 { font-size:18px; margin:0; letter-spacing:-.3px; }
+    p { margin:0; }
+    .muted, small { color:var(--muted); }
+    .controls { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin:26px 0 20px; }
+    .choose { flex:1; min-width:230px; }
+    label { display:block; margin-bottom:6px; font-weight:650; font-size:12px; }
+    select, button { font:inherit; border-radius:9px; min-height:45px; padding:10px 15px; }
+    select { width:100%; background:white; border:1px solid #b5c7be; color:var(--ink); }
+    button { cursor:pointer; background:white; color:var(--ink); border:1px solid #b5c7be; font-weight:650; }
+    button.primary { background:var(--green); color:white; border-color:var(--green); }
+    button:hover { filter:brightness(.96); }
+    button:disabled { opacity:.55; cursor:wait; }
+    :focus-visible { outline:3px solid #70bba3; outline-offset:3px; }
+    .layout { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(0,1fr); gap:20px; align-items:start; }
+    .stack { display:grid; gap:20px; min-width:0; }
+    .card { background:white; border:1px solid var(--line); border-radius:15px; padding:24px; min-width:0; }
+    .decision { border-top:5px solid #879a91; }
+    .decision[data-state="APPROVE"] { border-top-color:#239164; }
+    .decision[data-state="HOLD"] { border-top-color:#cf951c; }
+    .decision[data-state="INVESTIGATE"] { border-top-color:#ce5d4c; }
+    .split { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .badge { display:inline-block; padding:5px 10px; border-radius:6px; font-size:11px; letter-spacing:.7px; font-weight:800; background:#edf1ef; color:#4e625b; }
+    .badge[data-state="APPROVE"] { background:#e3f4e9; color:#17613e; }
+    .badge[data-state="HOLD"] { background:#fff1d1; color:#825600; }
+    .badge[data-state="INVESTIGATE"] { background:#fde9e3; color:#a23d2b; }
+    #headline { margin:18px 0 6px; font-size:25px; line-height:1.25; }
+    .metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 12px; padding:23px 0; margin-top:20px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .metrics small { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.8px; }
+    .metrics strong { font-size:24px; font-weight:650; letter-spacing:-.7px; }
+    .section-label { margin:22px 0 10px; font-size:12px; font-weight:750; text-transform:uppercase; letter-spacing:1px; }
+    #findings { list-style:none; padding:0; margin:0; }
+    #findings li { padding:12px 14px; margin-top:8px; border-radius:8px; background:#f4f6f3; border-left:3px solid #b7c8bd; }
+    #findings li[data-state="INVESTIGATE"] { background:#fff3ee; border-color:#ce5d4c; }
+    #findings li[data-state="HOLD"] { background:#fff8e9; border-color:#cf951c; }
+    dl { margin:18px 0 0; }
+    dt { color:var(--muted); font-size:12px; margin-top:16px; }
+    dd { margin:3px 0 0; font-size:13px; font-weight:600; overflow-wrap:anywhere; }
+    #variations { list-style:none; padding:0; margin:10px 0 0; }
+    #variations li { padding:9px 0; border-top:1px solid var(--line); font-size:13px; }
+    #history { margin-top:18px; max-height:310px; overflow:auto; }
+    .history-item { width:100%; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:10px; border:0; border-top:1px solid var(--line); border-radius:0; padding:13px 0; }
+    .history-item small { display:block; font-size:11px; font-weight:400; }
+    .error { background:#fff1dc; border:1px solid #ead1a4; border-radius:10px; padding:14px 18px; margin-bottom:20px; }
+    [hidden] { display:none !important; }
+    footer { font-size:12px; color:var(--muted); margin-top:22px; }
+    @media(max-width:760px) {
+      .bar, main { padding-left:18px; padding-right:18px; }
+      .layout { grid-template-columns:1fr; }
+      h1 { font-size:30px; }
+      .card { padding:20px; }
+      .metrics strong { font-size:clamp(17px,4.8vw,21px); }
+      .tag { font-size:10px; }
+      .split { flex-wrap:wrap; }
+    }
+    @media(max-width:360px) {
+      .metrics { grid-template-columns:1fr; }
+      .bar { flex-wrap:wrap; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="brand">Build<span>Guard</span></div>
+      <span class="tag">FalkorDB · Demo workspace</span>
+    </div>
+  </header>
+  <main>
+    <p class="eyebrow">Construction payment oversight</p>
+    <h1>Review before release.</h1>
+    <p class="muted">Trace the agreement, approvals and inspection evidence behind each request.</p>
+
+    <div class="controls">
+      <div class="choose">
+        <label for="payment">Payment request</label>
+        <select id="payment"><option value="">Loading requests…</option></select>
+      </div>
+      <button id="refresh" type="button">Refresh preview</button>
+      <button id="save" class="primary" type="button">Run &amp; save review</button>
+    </div>
+
+    <div id="error" class="error" role="alert" hidden></div>
+
+    
+    <section class="card" id="agent-panel" style="margin-bottom:20px">
+      <div class="split">
+        <h2>Ask BuildGuard</h2>
+        <span class="badge" id="agent-outcome">READY</span>
+      </div>
+      <p class="muted" style="margin-top:6px">
+        Ask about the selected request and its saved reviews.
+      </p>
+      <form id="agent-form" style="margin-top:16px">
+        <label for="agent-question">Your question</label>
+        <textarea id="agent-question" rows="2" maxlength="2000" required
+          style="width:100%;padding:12px;border:1px solid #b5c7be;border-radius:9px;font:inherit;resize:vertical">Explain the findings and what changed since earlier reviews.</textarea>
+        <div class="controls" style="margin:10px 0 0">
+          <button class="primary" id="agent-ask" type="submit">Ask agent</button>
+          <span id="agent-state" class="muted" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+      <div id="agent-answer" aria-live="polite"
+        style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:16px;max-height:380px;overflow:auto"></div>
+      <details id="agent-details" style="margin-top:14px" hidden>
+        <summary style="cursor:pointer">View graph tool results</summary>
+        <pre id="agent-trace" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;font-size:12px"></pre>
+      </details>
+    </section>
+
+<div class="layout">
+      <div class="stack">
+        <section class="card decision" id="decision" aria-live="polite" aria-busy="true">
+          <div class="split">
+            <p class="eyebrow" style="margin:0">Review recommendation</p>
+            <span class="badge" id="status">CHECKING</span>
+          </div>
+          <h2 id="headline">Reading graph evidence…</h2>
+          <p id="context" class="muted">Current graph review</p>
+
+          <div class="metrics">
+            <div><small>Requested</small><strong id="requested">—</strong></div>
+            <div><small>Remaining balance</small><strong id="remaining">—</strong></div>
+            <div><small>Authorised value</small><strong id="authorised">—</strong></div>
+            <div><small>Already paid</small><strong id="paid">—</strong></div>
+          </div>
+
+          <p class="section-label">Findings</p>
+          <ul id="findings"></ul>
+        </section>
+
+        <section class="card">
+          <div class="split">
+            <h2>Review history</h2>
+            <small id="history-count">Saved in the graph</small>
+          </div>
+          <p class="muted" style="margin-top:6px;font-size:13px">
+            Open a saved review to see the evidence recorded at that time.
+          </p>
+          <div id="history"><p class="muted">Loading history…</p></div>
+        </section>
+      </div>
+
+      <aside class="card">
+        <p class="eyebrow">Supporting records</p>
+        <h2>Graph evidence</h2>
+        <dl>
+          <dt>Agreement</dt><dd id="agreement">—</dd>
+          <dt>Base agreement value</dt><dd id="base">—</dd>
+          <dt>Payment rule</dt><dd id="rule">—</dd>
+          <dt>Agreement inspection</dt><dd id="inspection">—</dd>
+          <dt>Inspection evidence reference</dt><dd id="inspection-ref">—</dd>
+          <dt>Payment history verification</dt><dd id="ledger-state">—</dd>
+          <dt>Ledger reference</dt><dd id="ledger-ref">—</dd>
+          <dt>Policy version</dt><dd id="policy">—</dd>
+          <dt>Saved review reference</dt><dd id="review-id">—</dd>
+        </dl>
+        <p class="section-label">Approved variations</p>
+        <ul id="variations"></ul>
+      </aside>
+    </div>
+
+    <footer>Demo policy recommendations support human review. BuildGuard does not release payments.</footer>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const money = value => typeof value === 'number' && Number.isFinite(value)
+      ? new Intl.NumberFormat('en-NG', {style:'currency', currency:'NGN'}).format(value) : '—';
+    const date = value => value && !isNaN(Date.parse(value))
+      ? new Date(value).toLocaleString() : 'Date unavailable';
+    const titles = {
+      APPROVE:'Checks passed for this request.',
+      HOLD:'Evidence needs attention.',
+      INVESTIGATE:'This request needs investigation.'
+    };
+    const fields = [
+      'requested','remaining','authorised','paid','agreement','base','rule',
+      'inspection','inspection-ref','ledger-state','ledger-ref','policy','review-id'
+    ];
+    let revision = 0;
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {...options, cache:'no-store'});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Verification could not be completed.');
+      return data;
+    }
+
+    function busy(value) {
+      $('refresh').disabled = $('save').disabled = value || !$('payment').value;
+      $('decision').setAttribute('aria-busy', String(value));
+    }
+
+    function clearReport(state = 'CHECKING') {
+      fields.forEach(id => $(id).textContent = '—');
+      $('decision').dataset.state = $('status').dataset.state = state;
+      $('status').textContent = state;
+      $('headline').textContent = state === 'HOLD'
+        ? 'Verification unavailable.' : 'Reading graph evidence…';
+      $('context').textContent = 'Current graph review';
+      $('findings').replaceChildren();
+      $('variations').replaceChildren();
+    }
+
+    function render(report) {
+      const state = titles[report.recommendation] ? report.recommendation : 'HOLD';
+      if (state === 'APPROVE' && report.review_complete !== true) {
+        throw new Error('The approval review is incomplete.');
+      }
+      $('decision').dataset.state = $('status').dataset.state = state;
+      $('status').textContent = state;
+      $('headline').textContent = titles[state];
+      $('context').textContent = report.review_id
+        ? 'Saved review · ' + date(report.created_at)
+        : 'Current graph review · preview';
+
+      const values = {
+        requested:money(report.requested_ngn),
+        remaining:money(report.remaining_balance_ngn),
+        authorised:money(report.authorised_value_ngn),
+        paid:money(report.already_paid_ngn),
+        agreement:report.agreement_id,
+        base:money(report.agreement_value_ngn),
+        rule:report.payment_rule,
+        inspection:report.inspection_id,
+        'inspection-ref':report.inspection_evidence_ref,
+        'ledger-state':report.payment_history_verified === true ? 'Verified' : 'Not verified',
+        'ledger-ref':report.payment_history_ref,
+        policy:report.policy_version,
+        'review-id':report.review_label || report.review_id
+      };
+      Object.entries(values).forEach(([id, value]) => {
+        $(id).textContent = value || 'Not recorded';
+      });
+
+      $('findings').replaceChildren();
+      const findings = Array.isArray(report.findings) ? report.findings : [];
+      const messages = findings.length ? findings : [
+        state === 'APPROVE'
+          ? 'All configured policy checks passed.'
+          : 'Manual review is required.'
+      ];
+      for (const text of messages) {
+        const li = document.createElement('li');
+        li.textContent = text;
+        li.dataset.state = String(text).split(':')[0];
+        $('findings').append(li);
+      }
+
+      $('variations').replaceChildren();
+      for (const item of report.approved_variations || []) {
+        const li = document.createElement('li');
+        li.textContent = item.variation_id + ' · ' + money(item.amount_ngn);
+        $('variations').append(li);
+      }
+      if (!$('variations').children.length) {
+        $('variations').textContent = 'None recorded in this review.';
+      }
+    }
+
+    async function loadHistory(id, token) {
+      try {
+        const records = await api('/api/history/' + encodeURIComponent(id));
+        if (token !== revision) return;
+        $('history').replaceChildren();
+        $('history-count').textContent = records.length
+          + (records.length === 1 ? ' recent review' : ' recent reviews');
+
+        if (!records.length) {
+          $('history').textContent = 'No saved reviews yet. Run & save a review to record one.';
+        }
+        for (const record of records) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'history-item';
+
+          const label = document.createElement('span');
+          label.textContent = (record.review_label ? record.review_label + ' · ' : '') + date(record.created_at);
+          const sub = document.createElement('small');
+          sub.textContent = 'Open saved review';
+          label.append(sub);
+
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.dataset.state = record.recommendation;
+          badge.textContent = record.recommendation;
+
+          button.append(label, badge);
+          button.onclick = () => render(record);
+          $('history').append(button);
+        }
+      } catch (error) {
+        if (token === revision) {
+          $('history').textContent = 'History unavailable: ' + error.message;
+          $('history-count').textContent = '';
+        }
+      }
+    }
+
+    async function review(save = false) {
+      const id = $('payment').value;
+      if (!id) return;
+      const token = ++revision;
+      busy(true);
+      clearReport();
+      $('error').hidden = true;
+      $('history').textContent = 'Loading history…';
+      $('history-count').textContent = '';
+
+      try {
+        const report = await api(
+          save ? '/api/review' : '/api/review/' + encodeURIComponent(id),
+          save ? {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({payment_id:id})
+          } : {}
+        );
+        if (token !== revision) return;
+        if (report.payment_id !== id) {
+          throw new Error('The response does not match this payment request.');
+        }
+        render(report);
+        await loadHistory(id, token);
+      } catch (error) {
+        if (token !== revision) return;
+        clearReport('HOLD');
+        $('error').textContent = error.message;
+        $('error').hidden = false;
+        $('findings').textContent =
+          'Verification could not be completed. Refresh after the service is available.';
+        $('history').textContent = 'History has not been loaded.';
+      } finally {
+        if (token === revision) busy(false);
+      }
+    }
+
+    $('payment').onchange = () => review();
+    $('refresh').onclick = () => review();
+    $('save').onclick = () => review(true);
+
+    async function start() {
+      busy(true);
+      try {
+        const requests = await api('/api/requests');
+        $('payment').replaceChildren();
+        for (const item of requests) {
+          const option = document.createElement('option');
+          option.value = item.payment_id;
+          option.textContent = item.payment_id + ' · '
+            + (item.description || 'Payment request');
+          $('payment').append(option);
+        }
+        if (!requests.length) {
+          throw new Error('No demo payment requests were found.');
+        }
+        await review();
+      } catch (error) {
+        clearReport('HOLD');
+        $('error').textContent = error.message;
+        $('error').hidden = false;
+        busy(false);
+        $('history').textContent = 'History has not been loaded.';
+      }
+    }
+
+    start();
+  </script>
+
+  <script id="buildguard-agent-ui">
+  (() => {
+    const el = id => document.getElementById(id);
+    let attempt = 0;
+    let controller;
+
+    function badge(value) {
+      el('agent-outcome').textContent = value;
+      el('agent-outcome').dataset.state = value;
+    }
+
+    function resetAgent() {
+      ++attempt;
+      if (controller) controller.abort();
+      badge('READY');
+      el('agent-state').textContent = '';
+      el('agent-answer').textContent = '';
+      el('agent-trace').textContent = '';
+      el('agent-details').hidden = true;
+      el('agent-details').open = false;
+      el('agent-ask').disabled = false;
+    }
+
+    el('payment').addEventListener('change', resetAgent);
+    el('agent-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const id = el('payment').value;
+      const question = el('agent-question').value.trim();
+      if (!id || !question) {
+        el('agent-state').textContent =
+          'Choose a payment request and enter a question.';
+        return;
+      }
+
+      resetAgent();
+      const token = attempt;
+      const current = ++revision;
+      controller = new AbortController();
+      const activeController = controller;
+      const timer = setTimeout(() => activeController.abort(), 120000);
+
+      el('agent-ask').disabled = true;
+      busy(true);
+      clearReport();
+      el('error').hidden = true;
+      el('history').textContent = 'Loading history…';
+      el('history-count').textContent = '';
+      badge('CHECKING');
+      el('agent-state').textContent =
+        'Reading graph evidence and saved reviews…';
+
+      try {
+        const response = await fetch('/api/agent', {
+          method:'POST',
+          cache:'no-store',
+          signal:activeController.signal,
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({payment_id:id, question})
+        });
+        const data = await response.json();
+
+        if (token !== attempt || current !== revision) return;
+        if (!response.ok) {
+          throw new Error(data.error || 'Agent review is unavailable.');
+        }
+        if (data.status !== 'ok' || data.payment_id !== id || !data.review
+            || data.review.payment_id !== id
+            || data.recommendation !== data.review.recommendation) {
+          throw new Error('The agent response does not match this request.');
+        }
+
+        render(data.review);
+        badge(data.recommendation);
+        el('agent-answer').textContent = data.answer;
+        el('agent-trace').textContent =
+          JSON.stringify(data.tool_calls, null, 2);
+        el('agent-details').hidden = false;
+        el('agent-state').textContent =
+          'Explanation based on the graph tool results.';
+        await loadHistory(id, current);
+      } catch (error) {
+        if (token !== attempt || current !== revision) return;
+        clearReport('HOLD');
+        badge('HOLD');
+        el('agent-state').textContent = error.name === 'AbortError'
+          ? 'Agent request timed out. Please try again.'
+          : error.message;
+        el('agent-answer').textContent = '';
+        el('agent-details').hidden = true;
+        el('history').textContent = 'History has not been loaded.';
+      } finally {
+        clearTimeout(timer);
+        if (token === attempt && current === revision) {
+          el('agent-ask').disabled = false;
+          busy(false);
+        }
+      }
+    });
+  })();
+  </script>
+
+</body>
+</html>

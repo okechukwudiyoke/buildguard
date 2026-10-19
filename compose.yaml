@@ -1,0 +1,18 @@
+services:
+  falkordb:
+    image: "falkordb/falkordb@sha256:107455e862a824e45e8e9f5a7fbfdf5e00a08b14e13eae2577c72fd9e3f59ba6"
+    ports:
+      - "127.0.0.1:6379:6379"
+    environment:
+      REDIS_ARGS: "--appendonly yes --appendfsync everysec --dir /var/lib/falkordb/data"
+    volumes:
+      - buildguard_data:/var/lib/falkordb/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  buildguard_data:
