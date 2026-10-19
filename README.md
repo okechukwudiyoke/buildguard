@@ -149,3 +149,14 @@ BuildGuard does not release payments.
 
 Okechukwu Diyoke  
 https://github.com/okechukwudiyoke
+
+## Hackathon track
+
+Agents That Act on Connected Data.
+
+## AI assistance
+
+ChatGPT/Codex assisted with coding, debugging, documentation and test design.
+Okechukwu Diyoke supplied the construction use case and policy requirements,
+made the product and policy decisions, and ran and checked the demo scenarios
+through guided development sessions. The project uses synthetic demo data.
